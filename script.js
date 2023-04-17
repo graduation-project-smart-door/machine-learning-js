@@ -115,7 +115,6 @@ const changeWebcam = () => {
     });
 }
 
-
 (() => {
   const MODEL_URL = '/models'
 
@@ -228,6 +227,7 @@ const changeWebcam = () => {
         return Promise.all(
           newLabels.data.map(async (label) => {
             const descriptions = [];
+
             for (let i = 0; i <= 5; i++) {
               try {
                 const path = `labels/${label}/${i}.png`
@@ -255,7 +255,6 @@ const changeWebcam = () => {
       }
 
       video.addEventListener("play", videoPlaying);
-
 
       let interval
 
@@ -317,7 +316,7 @@ const changeWebcam = () => {
 
   setInterval(() => {
     checkLabelData()
-  }, 30_000)
+  }, 300_000)
 })()
 
 
@@ -333,4 +332,3 @@ const sendUserData = async (person) => {
     body: JSON.stringify(person),
   })
 }
-
