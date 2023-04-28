@@ -5,6 +5,7 @@
     searchParems.set('webcam', 1)
 
     window.open('http://localhost:5500/?webcam=2')
+    // window.open('http://localhost:5500/?webcam=3')
   }
 
   history.pushState(null, '', window.location.pathname + '?' + searchParems.toString())
@@ -266,14 +267,21 @@ const changeWebcam = () => {
           clearInterval(interval)
 
           Array.from(options).forEach((_, index) => {
+
             if (index === 1) {
-              if (window.location.href === 'http://localhost:5500/?webcam=2') {
+              if (window.location.href === 'http://localhost:5500/?webcam=1') {
                 select.value = Array.from(options)[index].value
 
                 changeWebcam()
               }
-            } else if (index === 2) {
-              if (window.location.href === 'http://localhost:5500/?webcam=1') {
+              // } else if (index === 2) {
+              //   if (window.location.href === 'http://localhost:5500/?webcam=1') {
+              //     select.value = Array.from(options)[index].value
+
+              //     changeWebcam()
+              //   }
+            } else if (index === Array.from(options).length - 1) {
+              if (window.location.href === 'http://localhost:5500/?webcam=2') {
                 select.value = Array.from(options)[index].value
 
                 changeWebcam()
@@ -295,7 +303,7 @@ const changeWebcam = () => {
 
       const direction = window.location.search === '?webcam=1' ? 'enter' : 'exit'
 
-      await sendUserData({ id: user.id, direction, event_time: new Date() })
+      await sendUserData({ person_id: user.id, direction, event_time: new Date() })
 
       setUser('')
     }
@@ -304,7 +312,7 @@ const changeWebcam = () => {
 
   const checkLabelData = async () => {
     try {
-      const res = await fetch('http://localhost:8001/api/labels')
+      const res = await fetch('http://localhost:8081/api/labels')
       const data = await res.json()
 
       newLabels.data = data
@@ -317,7 +325,7 @@ const changeWebcam = () => {
 
   setInterval(() => {
     checkLabelData()
-  }, 30_000)
+  }, 300_000)
 })()
 
 
@@ -328,9 +336,14 @@ const stopMediaTracks = (stream) => {
 }
 
 const sendUserData = async (person) => {
-  await fetch('http://localhost:3000/api/v1/users/recognize', {
+  const { status } = await fetch('http://localhost:8000/api/v1/users/recognize', {
     method: 'POST',
     body: JSON.stringify(person),
   })
-}
 
+  if (status === 201) {
+    await fetch('http://192.168.104.116/door/open', {
+      method: 'GET',
+    })
+  }
+}
