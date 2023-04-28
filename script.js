@@ -116,7 +116,6 @@ const changeWebcam = () => {
     });
 }
 
-
 (() => {
   const MODEL_URL = '/models'
 
@@ -229,6 +228,7 @@ const changeWebcam = () => {
         return Promise.all(
           newLabels.data.map(async (label) => {
             const descriptions = [];
+
             for (let i = 0; i <= 5; i++) {
               try {
                 const path = `labels/${label}/${i}.png`
@@ -256,7 +256,6 @@ const changeWebcam = () => {
       }
 
       video.addEventListener("play", videoPlaying);
-
 
       let interval
 
@@ -340,10 +339,13 @@ const sendUserData = async (person) => {
     method: 'POST',
     body: JSON.stringify(person),
   })
+<<<<<<< HEAD
 
   if (status === 201) {
     await fetch('http://192.168.104.116/door/open', {
       method: 'GET',
     })
   }
+=======
+>>>>>>> 040fc1b74c83e7ce0a9b2a1d902c59de2592b931
 }
