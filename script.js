@@ -339,13 +339,10 @@ const sendUserData = async (person) => {
     method: 'POST',
     body: JSON.stringify(person),
   })
-<<<<<<< HEAD
 
   if (status === 201) {
     await fetch('http://192.168.104.116/door/open', {
       method: 'GET',
     })
   }
-=======
->>>>>>> 040fc1b74c83e7ce0a9b2a1d902c59de2592b931
 }
