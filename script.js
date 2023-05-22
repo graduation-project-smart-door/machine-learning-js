@@ -1,18 +1,22 @@
+const video = document.getElementById('video');
+const select = document.getElementById('select');
+
+let origin
+
 (() => {
   const searchParems = new URLSearchParams(window.location.search)
+
+  origin = location.origin
 
   if (!window.location.search.length) {
     searchParems.set('webcam', 1)
 
-    window.open('http://localhost:5500/?webcam=2')
-    // window.open('http://localhost:5500/?webcam=3')
+    window.open(`${origin}/?webcam=2`)
   }
 
   history.pushState(null, '', window.location.pathname + '?' + searchParems.toString())
 })()
 
-const video = document.getElementById('video');
-const select = document.getElementById('select');
 
 let labels = [];
 
@@ -74,6 +78,8 @@ const gotDevices = (mediaDevices) => {
 
       option.value = mediaDevice.deviceId;
 
+      option.setAttribute('data-device-name', mediaDevice.label)
+
       const label = mediaDevice.label || `Camera ${count++}`;
       const textNode = document.createTextNode(label);
 
@@ -93,6 +99,7 @@ const changeWebcam = () => {
   if (select.value === '') {
     videoConstraints.facingMode = 'environment';
   } else {
+    console.log(select.value);
     videoConstraints.deviceId = { exact: select.value };
   }
 
@@ -133,15 +140,9 @@ const changeWebcam = () => {
 
   const setUser = (id) => {
     user.id = id
+    user.date = Date.now()
   }
 
-  const resetStatus = () => {
-    isDataSend.isSend = true
-
-    setTimeout(() => {
-      isDataSend.isSend = false
-    }, 1_000)
-  }
 
   watchEffect(() => {
     if (newLabels.data && newLabels.data.length) {
@@ -161,6 +162,8 @@ const changeWebcam = () => {
 
         faceapi.matchDimensions(canvas, displaySize);
 
+        let isInFocus = false
+
         setInterval(async () => {
           const detections = await faceapi
             .detectAllFaces(video)
@@ -175,8 +178,19 @@ const changeWebcam = () => {
             return faceMatcher.findBestMatch(d.descriptor);
           });
 
+
+          if (results.length) {
+            isInFocus = true
+          } else {
+            isInFocus = false
+          }
+
           results.forEach((result, i) => {
             const box = resizedDetections[i].detection.box;
+
+            if (result.label) {
+              isInFocus = true
+            }
 
             const drawBox = new faceapi.draw.DrawBox(box, {
               label: result,
@@ -186,9 +200,15 @@ const changeWebcam = () => {
 
             if (result.label !== 'unknown') {
               setUser(result.label.slice(result.label.lastIndexOf('--')).replace('--', '').trim())
+            } else {
+              setUser('')
             }
           });
-        }, 400);
+
+          // if (!isInFocus) {
+          //   closeDoor()
+          // }
+        }, 1_000);
       }
 
       Promise.all([
@@ -265,22 +285,15 @@ const changeWebcam = () => {
         if (Array.from(options).length > 1) {
           clearInterval(interval)
 
-          Array.from(options).forEach((_, index) => {
-
-            if (index === 1) {
-              if (window.location.href === 'http://localhost:5500/?webcam=1') {
+          Array.from(options).forEach((option, index) => {
+            if (index === 2) {
+              if (window.location.href === `${origin}/?webcam=1`) {
                 select.value = Array.from(options)[index].value
 
                 changeWebcam()
               }
-              // } else if (index === 2) {
-              //   if (window.location.href === 'http://localhost:5500/?webcam=1') {
-              //     select.value = Array.from(options)[index].value
-
-              //     changeWebcam()
-              //   }
-            } else if (index === Array.from(options).length - 1) {
-              if (window.location.href === 'http://localhost:5500/?webcam=2') {
+            } else if (index === Array.from(options).length - 2) {
+              if (window.location.href === `${origin}/?webcam=2`) {
                 select.value = Array.from(options)[index].value
 
                 changeWebcam()
@@ -297,15 +310,25 @@ const changeWebcam = () => {
   })
 
   watchEffect(async () => {
-    if (user.id && !isDataSend.isSend) {
-      resetStatus()
+    let statusData
 
+    if (user.id) {
       const direction = window.location.search === '?webcam=1' ? 'enter' : 'exit'
 
-      await sendUserData({ person_id: user.id, direction, event_time: new Date() })
+      statusData = await sendUserData({ person_id: user.id, direction, event_time: new Date() }).status
 
+      isDataSend.value = true
       setUser('')
+    } else if (isDataSend.value && statusData === 200) {
+      await closeDoor()
+
+      setTimeout(() => {
+        isDataSend.value = false
+      }, 1_000)
+
     }
+
+    return
   })
 
 
@@ -335,14 +358,20 @@ const stopMediaTracks = (stream) => {
 }
 
 const sendUserData = async (person) => {
-  const { status } = await fetch('http://localhost:8000/api/v1/users/recognize', {
-    method: 'POST',
-    body: JSON.stringify(person),
-  })
+  // const { status } = await fetch('http://localhost:8000/api/v1/users/recognize', {
+  //   method: 'POST',
+  //   body: JSON.stringify(person),
+  // })
 
-  if (status === 201) {
-    await fetch('http://192.168.104.116/door/open', {
-      method: 'GET',
-    })
-  }
+  // if (status === 201) {
+  await fetch('http://192.168.104.116/door/open', {
+    method: 'GET',
+  })
+  // }
+}
+
+const closeDoor = async () => {
+  await fetch('http://192.168.104.116/door/close', {
+    method: 'GET',
+  })
 }
