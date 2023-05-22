@@ -131,16 +131,19 @@ const changeWebcam = () => {
   })
 
   const user = reactive({
-    id: ''
+    id: '',
+    date: new Date()
   })
 
   const isDataSend = reactive({
     isSend: false,
   })
 
-  const setUser = (id) => {
+  const setUser = (id, date) => {
     user.id = id
-    user.date = Date.now()
+    user.date = date ?? new Date()
+
+    console.log(user);
   }
 
 
@@ -199,9 +202,9 @@ const changeWebcam = () => {
             drawBox.draw(canvas);
 
             if (result.label !== 'unknown') {
-              setUser(result.label.slice(result.label.lastIndexOf('--')).replace('--', '').trim())
+              setUser(result.label.slice(result.label.lastIndexOf('--')).replace('--', '').trim(), new Date())
             } else {
-              setUser('')
+              setUser(undefined, user.date)
             }
           });
 
@@ -310,7 +313,7 @@ const changeWebcam = () => {
   })
 
   watchEffect(async () => {
-    let statusData
+    console.log(user);
 
     if (user.id) {
       const direction = window.location.search === '?webcam=1' ? 'enter' : 'exit'
@@ -318,8 +321,10 @@ const changeWebcam = () => {
       statusData = await sendUserData({ person_id: user.id, direction, event_time: new Date() }).status
 
       isDataSend.value = true
-      setUser('')
-    } else if (isDataSend.value && statusData === 200) {
+      setUser('', new Date())
+
+      console.log(new Date().getTime(), (user.date.getTime() / 1000));
+    } else if ((new Date().getTime() - user.date.getTime()) / 1000 >= 5) {
       await closeDoor()
 
       setTimeout(() => {
