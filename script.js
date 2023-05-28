@@ -136,16 +136,17 @@ const changeWebcam = () => {
   })
 
   const isDataSend = reactive({
-    isSend: false,
+    value: true,
+  })
+
+  const status = reactive({
+    value: null
   })
 
   const setUser = (id, date) => {
     user.id = id
     user.date = date ?? new Date()
-
-    console.log(user);
   }
-
 
   watchEffect(() => {
     if (newLabels.data && newLabels.data.length) {
@@ -165,8 +166,6 @@ const changeWebcam = () => {
 
         faceapi.matchDimensions(canvas, displaySize);
 
-        let isInFocus = false
-
         setInterval(async () => {
           const detections = await faceapi
             .detectAllFaces(video)
@@ -181,12 +180,6 @@ const changeWebcam = () => {
             return faceMatcher.findBestMatch(d.descriptor);
           });
 
-
-          if (results.length) {
-            isInFocus = true
-          } else {
-            isInFocus = false
-          }
 
           results.forEach((result, i) => {
             const box = resizedDetections[i].detection.box;
@@ -203,14 +196,20 @@ const changeWebcam = () => {
 
             if (result.label !== 'unknown') {
               setUser(result.label.slice(result.label.lastIndexOf('--')).replace('--', '').trim(), new Date())
-            } else {
-              setUser(undefined, user.date)
             }
           });
 
-          // if (!isInFocus) {
-          //   closeDoor()
-          // }
+          if (!results.length && status.value) {
+            if (status.value === 200) {
+              closeDoor()
+
+              status.value = null
+
+              isDataSend.value = true
+
+              return
+            }
+          }
         }, 1_000);
       }
 
@@ -313,27 +312,13 @@ const changeWebcam = () => {
   })
 
   watchEffect(async () => {
-    console.log(user);
-
     if (user.id) {
       const direction = window.location.search === '?webcam=1' ? 'enter' : 'exit'
 
-      statusData = await sendUserData({ person_id: user.id, direction, event_time: new Date() }).status
+      status.value = await sendUserData({ person_id: user.id, direction, event_time: new Date() })
 
       isDataSend.value = true
-      setUser('', new Date())
-
-      console.log(new Date().getTime(), (user.date.getTime() / 1000));
-    } else if ((new Date().getTime() - user.date.getTime()) / 1000 >= 5) {
-      await closeDoor()
-
-      setTimeout(() => {
-        isDataSend.value = false
-      }, 1_000)
-
     }
-
-    return
   })
 
 
@@ -369,9 +354,11 @@ const sendUserData = async (person) => {
   // })
 
   // if (status === 201) {
-  await fetch('http://192.168.104.116/door/open', {
+  const { status } = await fetch('https://jsonplaceholder.typicode.com/todos/1', {
     method: 'GET',
   })
+
+  return status
   // }
 }
 
