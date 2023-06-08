@@ -288,15 +288,23 @@ const changeWebcam = () => {
           clearInterval(interval)
 
           Array.from(options).forEach((option, index) => {
-            if (index === 2) {
+            const attr = option.getAttribute('data-device-name')
+
+
+            if (attr === 'Logi C270 HD WebCam (046d:0825)') {
+            console.log(attr);
+
               if (window.location.href === `${origin}/?webcam=1`) {
-                select.value = Array.from(options)[index].value
+                select.value = option.value
 
                 changeWebcam()
               }
-            } else if (index === Array.from(options).length - 2) {
+            } else if (attr === 'Unity Video Capture') {
+            console.log(attr);
+
               if (window.location.href === `${origin}/?webcam=2`) {
-                select.value = Array.from(options)[index].value
+                select.value = option.value
+                console.log(option);
 
                 changeWebcam()
               }
@@ -348,22 +356,20 @@ const stopMediaTracks = (stream) => {
 }
 
 const sendUserData = async (person) => {
-  // const { status } = await fetch('http://localhost:8000/api/v1/users/recognize', {
-  //   method: 'POST',
-  //   body: JSON.stringify(person),
-  // })
+  fetch('http://localhost:8000/api/v1/users/recognize', {
+    method: 'POST',
+    body: JSON.stringify(person),
+  })
 
-  // if (status === 201) {
-  const { status } = await fetch('https://jsonplaceholder.typicode.com/todos/1', {
+  const { status } = await fetch('http://192.168.28.116/door/open', {
     method: 'GET',
   })
 
   return status
-  // }
 }
 
 const closeDoor = async () => {
-  await fetch('http://192.168.104.116/door/close', {
+  await fetch('http://192.168.28.116/door/close', {
     method: 'GET',
   })
 }
